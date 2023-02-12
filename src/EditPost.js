@@ -1,17 +1,18 @@
 import { format } from 'date-fns';
-import { useContext, useEffect, useState } from 'react';
+import { useStoreActions, useStoreState } from 'easy-peasy';
+import { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import api from './api/posts';
-import DataContext from './context/DataContext';
 
 const EditPost = () => {
-  const [editTitle, setEditTitle] = useState('');
-  const [editBody, setEditBody] = useState('');
-  const { posts, setPosts } = useContext(DataContext);
-  const navigation = useNavigate();
-
+  const editTitle = useStoreState(state => state.editTitle);
+  const editBody = useStoreState(state => state.editBody);
+  const getPostById = useStoreState(state => state.getPostById);
+  const setEditTitle = useStoreActions(actions => actions.setEditTitle);
+  const setEditBody = useStoreActions(actions => actions.setEditBody);
+  const editPost = useStoreActions(actions => actions.editPost);
   const { id } = useParams();
-  const post = posts.find(post => post.id.toString() === id);
+  const post = getPostById(id);
+  const navigation = useNavigate();
 
   useEffect(() => {
     if (post) {
@@ -20,7 +21,7 @@ const EditPost = () => {
     }
   }, [post, setEditTitle, setEditBody]);
 
-  const handleEdit = async id => {
+  const handleEdit = id => {
     const datetime = format(new Date(), 'MMMM dd, yyyy pp');
     const updatedPost = {
       id,
@@ -29,17 +30,8 @@ const EditPost = () => {
       body: editBody
     };
 
-    try {
-      const response = await api.put(`/posts/${id}`, updatedPost);
-      setPosts(
-        posts.map(post => (post.id === id ? { ...response.data } : post))
-      );
-      setEditTitle('');
-      setEditBody('');
-      navigation('/');
-    } catch (err) {
-      console.log(`Error ${err.message}`);
-    }
+    editPost(updatedPost);
+    navigation(`/post/${id}`);
   };
 
   return (
@@ -64,7 +56,7 @@ const EditPost = () => {
               onChange={e => setEditBody(e.target.value)}
               required
             ></textarea>
-            <button type="submit" onClick={() => handleEdit(post.id)}>
+            <button type="button" onClick={() => handleEdit(post.id)}>
               Submit
             </button>
           </form>
